@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "8939088380",
+    "project_id": "wgr-todolist",
+    "storage_bucket": "wgr-todolist.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8939088380:android:9d019ab55288c2db7daa79",
+        "android_client_info": {
+          "package_name": "com.example.wish_group_todolist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlGrCQXzyFzqJpj5ma74WpMe2ObSZnULw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
