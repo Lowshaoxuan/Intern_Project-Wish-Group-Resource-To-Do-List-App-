@@ -1,4 +1,3 @@
-// Imports
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -281,34 +280,35 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-                    child: _avatarUrl == null ? const Icon(Icons.person, size: 40) : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: _showImagePickerOptions,
-                      child: const CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Colors.blue,
-                        child: Icon(Icons.camera_alt, size: 16, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  if (_isUploading)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black45,
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                    ),
-                ],
+              // Stack( // Removed Stack
+              //   children: [ // Removed Stack
+              CircleAvatar(
+                radius: 40,
+                // backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null, // Removed dynamic image
+                backgroundImage: const AssetImage('assets/images/avatar1.jpg'), // Static Image
+                // child: _avatarUrl == null ? const Icon(Icons.person, size: 40) : null, // Removed conditional
               ),
+              // Positioned( // Removed Positioned
+              //   bottom: 0, // Removed Positioned
+              //   right: 0, // Removed Positioned
+              //   child: GestureDetector( // Removed GestureDetector
+              //     onTap: _showImagePickerOptions, // Removed onTap
+              //     child: const CircleAvatar( // Removed CircleAvatar
+              //       radius: 14, // Removed CircleAvatar
+              //       backgroundColor: Colors.blue, // Removed CircleAvatar
+              //       child: Icon(Icons.camera_alt, size: 16, color: Colors.white), // Removed Icon
+              //     ), // Removed CircleAvatar
+              //   ), // Removed GestureDetector
+              // ), // Removed Positioned
+              //   if (_isUploading) // Removed conditional
+              //     Positioned.fill( // Removed Positioned
+              //       child: Container( // Removed Container
+              //         color: Colors.black45, // Removed Container
+              //         child: const Center(child: CircularProgressIndicator()), // Removed Center
+              //       ), // Removed Container
+              //     ), // Removed Positioned
+              // ], // Removed Stack
+              // ),  // Removed Stack
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

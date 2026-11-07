@@ -96,7 +96,7 @@ class _SignupPageState extends State<SignupPage> {
         'username': '',
         'phoneNumber': '',
         'subordinate': [],
-        'avatarUrl': '',
+        'avatarUrl': 'avatar1.jpg',
       });
 
       // Immediately sign out the user
@@ -256,9 +256,13 @@ class _SignupPageState extends State<SignupPage> {
                             fillColor: Colors.white.withOpacity(0.85),
                             hintText: '********',
                             errorText: _passwordError,
-                            // --- START OF CHANGES ---
-                            errorStyle: const TextStyle(color: Colors.black),
-                            // --- END OF CHANGES ---
+                            errorMaxLines: 4, // 👈 Allow wrapping
+                            isDense: true,     // 👈 Compress vertical spacing
+                            errorStyle: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 13,
+                              height: 1.3, // 👈 Optional: add line spacing
+                            ),
                             hintStyle: TextStyle(
                               fontFamily: 'Poppins',
                               color: Colors.black.withOpacity(0.4),

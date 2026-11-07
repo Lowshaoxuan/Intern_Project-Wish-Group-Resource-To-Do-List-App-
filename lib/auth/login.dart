@@ -1,4 +1,3 @@
-// login.dart
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'signup.dart';
 import 'forgotpassword.dart';
-import 'create_username.dart'; // <-- Add this import
-import '../homepage.dart'; // <-- Added import for HomePage
+import 'create_username.dart';
+import '../homepage.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
   const LoginPage({Key? key, this.prefilledEmail}) : super(key: key);
+
   @override
   State createState() => _LoginPageState();
 }
@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.prefilledEmail != null) {
+    if (widget.prefilledEmail?.isNotEmpty ?? false) {
       _emailController.text = widget.prefilledEmail!;
     }
   }
@@ -38,20 +38,16 @@ class _LoginPageState extends State<LoginPage> {
       _emailError = null;
       _passwordError = null;
     });
+
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
     if (email.isEmpty) {
-      setState(() {
-        _emailError = 'Please enter your email';
-      });
+      setState(() => _emailError = 'Please enter your email');
       return;
     }
-
     if (password.isEmpty) {
-      setState(() {
-        _passwordError = 'Please enter your password';
-      });
+      setState(() => _passwordError = 'Please enter your password');
       return;
     }
 
@@ -60,45 +56,40 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
         password: password,
       );
-
       User? user = userCredential.user;
 
-      /*if (user != null && !user.emailVerified) {
-        setState(() {
-          _emailError = 'Your account has not been activated. Please verify your email.';
-        });
-        return;
-      }*/
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.greenAccent),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Login Successful!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.black87,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
       if (user != null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('AppUser')
-            .doc(user.uid)
-            .get();
+        final docRef = FirebaseFirestore.instance.collection('AppUser').doc(user.uid);
+        DocumentSnapshot doc = await docRef.get();
 
-        if (!userDoc.exists || userDoc['username'] == null || userDoc['username'].toString().isEmpty) {
+        if (!doc.exists) {
+          await docRef.set({'email': user.email, 'username': ''});
+        }
+
+        // Re-fetch after possibly creating it
+        final updatedDoc = await docRef.get();
+        final data = updatedDoc.data() as Map<String, dynamic>?;
+        final username = data?['username'];
+        final hasUsername = username != null && username.toString().trim().isNotEmpty;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.greenAccent),
+                SizedBox(width: 12),
+                Expanded(child: Text('Login Successful!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+              ],
+            ),
+            backgroundColor: Colors.black87,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        if (!hasUsername) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const CreateUsernamePage()),
@@ -112,13 +103,9 @@ class _LoginPageState extends State<LoginPage> {
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        setState(() {
-          _emailError = 'No account found with this email';
-        });
+        setState(() => _emailError = 'No account found with this email');
       } else if (e.code == 'wrong-password') {
-        setState(() {
-          _passwordError = 'Incorrect password';
-        });
+        setState(() => _passwordError = 'Incorrect password');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login failed: ${e.message}')),
@@ -127,6 +114,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // Google Sign-In is commented out
+  /*
   Future _signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -138,7 +127,23 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+      if (user == null) {
+        throw FirebaseAuthException(code: 'user-null', message: 'Google sign-in failed.');
+      }
+
+      final docRef = FirebaseFirestore.instance.collection('AppUser').doc(user.uid);
+      DocumentSnapshot doc = await docRef.get();
+
+      if (!doc.exists) {
+        await docRef.set({'email': user.email, 'username': ''});
+      }
+
+      final updatedDoc = await docRef.get();
+      final data = updatedDoc.data() as Map<String, dynamic>?;
+      final username = data?['username'];
+      final hasUsername = username != null && username.toString().trim().isNotEmpty;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -147,37 +152,21 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
 
-      User? user = _auth.currentUser;
-
-      if (user != null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('AppUser')
-            .doc(user.uid)
-            .get();
-
-        if (!userDoc.exists || userDoc['username'] == null || userDoc['username'].toString().isEmpty) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateUsernamePage()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
-        }
+      if (!hasUsername) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const CreateUsernamePage()));
+      } else {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google Sign-In failed: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Google Sign-In failed: $e'), backgroundColor: Colors.red),
       );
     }
   }
+  */
 
-  @override
+
+@override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
@@ -234,14 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
-                          'Email:',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
+                        const Text('Email:', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white)),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _emailController,
@@ -249,35 +231,17 @@ class _LoginPageState extends State<LoginPage> {
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.85),
                             hintText: 'Enter your email',
-                            hintStyle: TextStyle(
-                              fontFamily: 'Poppins',
-                              color: Colors.black.withOpacity(0.4),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.black.withOpacity(0.4)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                         if (_emailError != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              _emailError!,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                color: Colors.black,
-                              ),
-                            ),
+                            child: Text(_emailError!, style: const TextStyle(fontFamily: 'Poppins', color: Colors.black)),
                           ),
                         const SizedBox(height: 20),
-                        const Text(
-                          'Password:',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
+                        const Text('Password:', style: TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white)),
                         const SizedBox(height: 8),
                         TextField(
                           controller: _passwordController,
@@ -287,22 +251,12 @@ class _LoginPageState extends State<LoginPage> {
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.85),
                             hintText: '********',
-                            hintStyle: TextStyle(
-                              fontFamily: 'Poppins',
-                              color: Colors.black.withOpacity(0.4),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            hintStyle: TextStyle(fontFamily: 'Poppins', color: Colors.black.withOpacity(0.4)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                color: Colors.grey[700],
-                              ),
+                              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey[700]),
                               onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
+                                setState(() => _obscurePassword = !_obscurePassword);
                               },
                             ),
                           ),
@@ -310,23 +264,14 @@ class _LoginPageState extends State<LoginPage> {
                         if (_passwordError != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              _passwordError!,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                color: Colors.black,
-                              ),
-                            ),
+                            child: Text(_passwordError!, style: const TextStyle(fontFamily: 'Poppins', color: Colors.black)),
                           ),
                         const SizedBox(height: 16),
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                              );
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordPage()));
                             },
                             child: const Text(
                               'Forgot Password?',
@@ -349,9 +294,7 @@ class _LoginPageState extends State<LoginPage> {
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 elevation: 5,
                                 shadowColor: Colors.black45,
                                 splashFactory: InkRipple.splashFactory,
@@ -359,17 +302,13 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: _login,
                               child: const Text(
                                 'Login',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: TextStyle(fontSize: 18, fontFamily: 'Poppins', fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Center(
+                        /*Center(
                           child: GestureDetector(
                             onTap: _signInWithGoogle,
                             child: Container(
@@ -383,34 +322,24 @@ class _LoginPageState extends State<LoginPage> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Image.asset(
-                                    'assets/images/google icon.png',
-                                    height: 24,
-                                  ),
+                                  Image.asset('assets/images/google icon.png', height: 24),
                                   const SizedBox(width: 10),
                                   const Text(
                                     'Sign in with Google',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                    ),
+                                    style: TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.white),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                        ),
+                        ),*/
                         const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
                               "Don't have an account? ",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Poppins',
-                              ),
+                              style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
                             ),
                             GestureDetector(
                               onTap: () async {
@@ -430,7 +359,6 @@ class _LoginPageState extends State<LoginPage> {
                                   color: Colors.black,
                                   fontFamily: 'Poppins',
                                   fontWeight: FontWeight.bold,
-
                                 ),
                               ),
                             ),
@@ -448,5 +376,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-

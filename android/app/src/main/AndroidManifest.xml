@@ -2,6 +2,7 @@
     <application
         android:label="wish_group_todolist"
         android:name="${applicationName}"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
